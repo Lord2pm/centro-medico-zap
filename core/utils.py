@@ -27,7 +27,7 @@ def create_prompt(context: str):
     LIMITE_SIMILARIDADE = 0.2
 
     # Verifica se o histórico não está vazio
-    if historico:
+    if historico: 
         ultima_pergunta = historico[-1].replace("Pergunta: ", "")
         if similar(ultima_pergunta, context) < LIMITE_SIMILARIDADE:
             # Reinicia o histórico se a nova pergunta for significativamente diferente
