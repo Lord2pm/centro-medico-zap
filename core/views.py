@@ -38,7 +38,7 @@ def custom_recommendations(request):
     resp = MessagingResponse()
     user_message = request.POST.get("Body")
     if not request.session["question_ia"]:
-        answer = "🌟 *Receber Recomendações Personalizadas* (do nosso agente IA 🤖)\n\n🩺 *O que você gostaria de saber sobre lentes, armações ou cuidados com os olhos? Digite sua pergunta e nosso agente fornecerá recomendações personalizadas!* \n\n*Para voltar ao menu, digite voltar.*"
+        answer = "🌟 *Receber Recomendações Personalizadas* (do nosso agente IA 🤖)\n\n🩺 *O que você gostaria de saber sobre lentes, armações ou cuidados com os olhos? Digite sua pergunta e nosso agente fornecerá recomendações personalizadas!* \n\n*Para voltar ao menu, digite 0.*"
         request.session["question_ia"] = 1
     else:
         answer = create_prompt(user_message)
@@ -71,19 +71,20 @@ def close_session(request):
 @csrf_exempt
 @require_POST
 def home(request):
+    resp = MessagingResponse()
     user_message = request.POST.get("Body")
 
     if "i" not in request.session:
         init_sessions(request)
 
-    if request.session["question_ia"]:
-        return redirect("custom-recommendations")
-
     if user_message.lower() == "fim":
         return redirect("close-session")
 
-    if user_message.lower() == "0":
+    if user_message == "0":
         return redirect("menu")
+
+    if request.session["question_ia"]:
+        return redirect("custom-recommendations")
 
     match request.session["i"]:
         case 0:
@@ -102,8 +103,7 @@ def home(request):
                     request.session["menu_option"] = 4
                     return redirect("show-about-we")
                 case _:
-                    return HttpResponse(
-                        "❌ Opção inválida! Por favor, escolha uma das opções abaixo: 🔄"
-                    )
+                    resp.message("❌ Opção inválida! Por favor, escolha uma das opções contida no menu🔄")
+                    return HttpResponse(str(resp))
         case _:
             return HttpResponse("Erro")
