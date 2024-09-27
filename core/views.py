@@ -27,7 +27,10 @@ def show_menu(request):
         "💡 Como podemos lhe ajudar hoje?\n\n1️⃣ Agendar uma consulta com um de nossos especialistas.\n\n2️⃣ Consultar o histórico de suas consultas.\n\n3️⃣ Receber recomendações personalizadas (da nossa IA 🤖) de lentes, armações e de cuidados com os seus olhos 👁️‍🗨️✨.\n\n4️⃣ Saiba mais sobre nós."
     )
     request.session["i"] = 2
+    request.session["menu_option"] = None
+    request.session["question_ia"] = None
     return HttpResponse(str(resp))
+
 
 @csrf_exempt
 @require_POST
@@ -39,11 +42,10 @@ def custom_recommendations(request):
         request.session["question_ia"] = 1
     else:
         answer = create_prompt(user_message)
-    resp.message(
-        f"{answer}"
-    )
+    resp.message(f"{answer}")
 
     return HttpResponse(str(resp))
+
 
 @csrf_exempt
 @require_POST
@@ -70,22 +72,26 @@ def close_session(request):
 @require_POST
 def home(request):
     user_message = request.POST.get("Body")
-   
+
     if "i" not in request.session:
         init_sessions(request)
+
     if request.session["question_ia"]:
         return redirect("custom-recommendations")
-    
+
     if user_message.lower() == "fim":
         return redirect("close-session")
+
+    if user_message.lower() == "0":
+        return redirect("menu")
 
     match request.session["i"]:
         case 0:
             return redirect("start")
         case 1:
-            return redirect("menu") 
+            return redirect("menu")
         case 2:
-            match user_message :
+            match user_message:
                 case "1":
                     ...
                 case "2":
@@ -96,6 +102,8 @@ def home(request):
                     request.session["menu_option"] = 4
                     return redirect("show-about-we")
                 case _:
-                    return HttpResponse("❌ Opção inválida! Por favor, escolha uma das opções abaixo: 🔄")      
+                    return HttpResponse(
+                        "❌ Opção inválida! Por favor, escolha uma das opções abaixo: 🔄"
+                    )
         case _:
             return HttpResponse("Erro")
