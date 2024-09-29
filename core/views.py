@@ -6,13 +6,50 @@ from twilio.twiml.messaging_response import MessagingResponse
 from .utils import init_sessions, create_prompt
 from users.views import register_user
 from consultas.views import get_consultas_by_user_phone
+from consultas.models import TipoConsulta
 
 
 @csrf_exempt
 @require_POST
 def schedule_appointment(request):
+    tipos_consulta = TipoConsulta.objects.all()
     resp = MessagingResponse()
-    resp.message("Agendar consulta")
+    user_message = request.POST.get("Body")
+
+    match request.session["consulta_i"]:
+        case 0:
+            resp.message(
+                "🧑‍⚕️ *Agendamento de Consulta*\n\n"
+                "Por favor, informe o *nome completo* do paciente:"
+            )
+            request.session["consulta_i"] += 1
+        case 1:
+            request.session["dados_consulta"]["nome"] = user_message
+            resp.message("🎂 Agora, informe a *idade* do paciente:")
+            request.session["consulta_i"] += 1
+        case 2:
+            request.session["dados_consulta"]["idade"] = user_message
+            if tipos_consulta.exists():
+                message = "📝 *Escolha o tipo de consulta desejado*:\n\n"
+                for tipo in tipos_consulta:
+                    message += f"{tipo.id}. {tipo.nome} - {tipo.preco:.2f} Kz\n"
+
+                resp.message(message)
+                request.session["consulta_i"] += 1
+            else:
+                resp.message(
+                    "⚠️ *Desculpe*, no momento não há tipos de consulta disponíveis. Tente novamente mais tarde."
+                )
+        case 3:
+            request.session["dados_consulta"]["tipo"] = tipos_consulta.get(
+                id=int(user_message)
+            )
+            print(request.session["dados_consulta"]["tipo"])
+            resp.message("🗓️ *Informe a Data da consulta | dd/mm/aaaa hh:mm*")
+            request.session["consulta_i"] += 1
+        case 4:
+            ...
+
     return HttpResponse(str(resp))
 
 
@@ -42,6 +79,8 @@ def show_menu(request):
     request.session["i"] = 2
     request.session["menu_option"] = None
     request.session["question_ia"] = None
+    request.session["dados_consulta"] = {}
+    request.session["consulta_i"] = 0
     return HttpResponse(str(resp))
 
 
@@ -106,7 +145,12 @@ def home(request):
         case 1:
             return redirect("menu")
         case 2:
-            match user_message:
+            request.session["menu_option"] = (
+                user_message
+                if not request.session["menu_option"] and user_message.lower() != "v"
+                else request.session["menu_option"]
+            )
+            match request.session["menu_option"]:
                 case "1":
                     return redirect("schedule-appointment")
                 case "2":
