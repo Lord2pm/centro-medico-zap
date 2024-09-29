@@ -1,10 +1,19 @@
 from django.shortcuts import HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.contrib.sessions.models import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
 from .utils import init_sessions, create_prompt
+from users.views import register_user
+from consultas.views import get_consultas_by_user_phone
+
+
+@csrf_exempt
+@require_POST
+def schedule_appointment(request):
+    resp = MessagingResponse()
+    resp.message("Agendar consulta")
+    return HttpResponse(str(resp))
 
 
 @csrf_exempt
@@ -12,6 +21,10 @@ from .utils import init_sessions, create_prompt
 def show_start_message(request):
     resp = MessagingResponse()
     user_name = request.POST.get("ProfileName")
+    user_phone = request.POST.get("From").split(":")[-1]
+
+    register_user(user_name, user_phone)
+
     resp.message(
         f"👁️‍🗨️✨ Olá, *{user_name}*, Seja bem-vindo(a) ao *Centro Óptico Visão Futurista*!\n\nÉ um prazer tê-lo(a) conosco! 🩺👓 Estamos aqui para ajudar a cuidar da sua visão 👁️ com precisão e cuidado, de forma simples e eficiente. 🔍👨‍⚕️👩‍⚕️\n\n📝 *Digite qualquer coisa para continuar* 📝"
     )
@@ -64,7 +77,7 @@ def close_session(request):
     resp.message(
         "🔒 Sessão Encerrada 🔒\n\nObrigado por visitar o *Centro óptico Visão Futurista*! Se precisar de mais assistência, não hesite em entrar em contato. 👁️‍🗨️✨"
     )
-    Session.objects.all().delete()
+    init_sessions(request)
     return HttpResponse(str(resp))
 
 
@@ -73,6 +86,7 @@ def close_session(request):
 def home(request):
     resp = MessagingResponse()
     user_message = request.POST.get("Body")
+    user_phone = request.POST.get("From").split(":")[-1]
 
     if "i" not in request.session:
         init_sessions(request)
@@ -94,16 +108,19 @@ def home(request):
         case 2:
             match user_message:
                 case "1":
-                    ...
+                    return redirect("schedule-appointment")
                 case "2":
-                    ...
+                    resp.message(get_consultas_by_user_phone(user_phone))
+                    return HttpResponse(str(resp))
                 case "3":
                     return redirect("custom-recommendations")
                 case "4":
                     request.session["menu_option"] = 4
                     return redirect("show-about-we")
                 case _:
-                    resp.message("❌ Opção inválida! Por favor, escolha uma das opções contida no menu🔄")
+                    resp.message(
+                        "❌ Opção inválida! Por favor, escolha uma das opções contida no menu🔄"
+                    )
                     return HttpResponse(str(resp))
         case _:
             return HttpResponse("Erro")
