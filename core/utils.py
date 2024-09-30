@@ -11,6 +11,7 @@ def init_sessions(request):
     request.session["i"] = 0
     request.session["menu_option"] = None
     request.session["question_ia"] = None
+    request.session["user_phone"] = None
     request.session["dados_consulta"] = {}
     request.session["consulta_i"] = 0
 

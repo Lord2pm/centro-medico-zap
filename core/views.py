@@ -2,10 +2,11 @@ from django.shortcuts import HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from twilio.twiml.messaging_response import MessagingResponse
+from datetime import datetime
 
 from .utils import init_sessions, create_prompt
 from users.views import register_user
-from consultas.views import get_consultas_by_user_phone
+from consultas.views import get_consultas_by_user_phone, register_consultas
 from consultas.models import TipoConsulta
 
 
@@ -41,14 +42,59 @@ def schedule_appointment(request):
                     "⚠️ *Desculpe*, no momento não há tipos de consulta disponíveis. Tente novamente mais tarde."
                 )
         case 3:
-            request.session["dados_consulta"]["tipo"] = tipos_consulta.get(
+            type_consulta = tipos_consulta.get(
                 id=int(user_message)
             )
+            request.session["dados_consulta"]["id_tipo"] = user_message
+            request.session["dados_consulta"]["tipo"] = type_consulta.id
             print(request.session["dados_consulta"]["tipo"])
             resp.message("🗓️ *Informe a Data da consulta | dd/mm/aaaa hh:mm*")
             request.session["consulta_i"] += 1
         case 4:
-            ...
+            request.session["dados_consulta"]["data"] = user_message
+            data_cons = request.session["dados_consulta"]
+            resp.message(
+                f"🧑‍⚕️ *Nome do Paciente:* {data_cons.get('nome')}\n"
+                f"🎂 *Idade do Paciente:* {data_cons.get('idade')} anos\n"
+                f"🗓️ *Data da Consulta:* {data_cons.get('data')}\n"
+                f"📋 *Tipo da Consulta:* {data_cons.get('tipo')}\n"
+                f"--------------------------------------------\n"
+                f"✅ *Por favor, confirme se os dados estão corretos.*\n"
+                f"🔄 Responda com '✅ Sim' ou '❌ Não'."
+            )
+            request.session["consulta_i"] += 1
+
+        case 5:
+            data_cons = request.session["dados_consulta"]
+            nome_paciente = data_cons.get('nome')
+            idade = data_cons.get('idade')
+            data_consulta = data_cons.get('data')
+            data_formatada = datetime.strptime(data_consulta, "%d/%m/%Y %H:%M")
+            id_type = data_cons.get('id_tipo')
+            phone = request.session["user_phone"]
+            type_consulta = tipos_consulta.get(
+                id=int(id_type)
+            )
+            if user_message.lower().strip() == "sim":
+                register_consultas(nome_paciente, idade, data_formatada, phone, type_consulta)
+                resp.message(
+                    f"✅ *Consulta Agendada com Sucesso!*\n"
+                    f"🧑‍⚕️ *Nome do Paciente:* {data_cons.get('nome')}\n"
+                    f"🎂 *Idade do Paciente:* {data_cons.get('idade')} anos\n"
+                    f"🗓️ *Data da Consulta:* {data_cons.get('data')}\n"
+                    f"📋 *Tipo da Consulta:* {data_cons.get('tipo')}\n"
+                    f"--------------------------------------------\n"
+                    f"👍 Agradecemos a sua preferência! Se precisar de mais informações, entre em contato."
+                )
+            if user_message.lower().strip() == "não":
+                resp.message(        
+                    f"⚠️ *Erro nos Dados*\n"
+                    f"Parece que houve um erro com os seus dados. \n"
+                    f"Por favor, clique em qualquer tecla para reiniciar a agenda e corrigir as informações.\n"
+                    f"📅 Agradecemos a sua compreensão!"
+                )
+                request.session["consulta_i"] = 0
+            
 
     return HttpResponse(str(resp))
 
@@ -126,6 +172,7 @@ def home(request):
     resp = MessagingResponse()
     user_message = request.POST.get("Body")
     user_phone = request.POST.get("From").split(":")[-1]
+    request.session["user_phone"] = user_phone
 
     if "i" not in request.session:
         init_sessions(request)
