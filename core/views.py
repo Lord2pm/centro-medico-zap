@@ -42,22 +42,22 @@ def schedule_appointment(request):
                     "⚠️ *Desculpe*, no momento não há tipos de consulta disponíveis. Tente novamente mais tarde."
                 )
         case 3:
-            type_consulta = tipos_consulta.get(
-                id=int(user_message)
-            )
-            request.session["dados_consulta"]["id_tipo"] = user_message
+            type_consulta = tipos_consulta.get(id=int(user_message))
+            request.session["dados_consulta"]["id_tipo"] = int(user_message)
             request.session["dados_consulta"]["tipo"] = type_consulta.id
-            print(request.session["dados_consulta"]["tipo"])
             resp.message("🗓️ *Informe a Data da consulta | dd/mm/aaaa hh:mm*")
             request.session["consulta_i"] += 1
         case 4:
             request.session["dados_consulta"]["data"] = user_message
             data_cons = request.session["dados_consulta"]
+            type_consulta = tipos_consulta.get(
+                id=int(request.session["dados_consulta"]["id_tipo"])
+            )
             resp.message(
                 f"🧑‍⚕️ *Nome do Paciente:* {data_cons.get('nome')}\n"
                 f"🎂 *Idade do Paciente:* {data_cons.get('idade')} anos\n"
                 f"🗓️ *Data da Consulta:* {data_cons.get('data')}\n"
-                f"📋 *Tipo da Consulta:* {data_cons.get('tipo')}\n"
+                f"📋 *Tipo da Consulta:* {type_consulta.nome}\n"
                 f"--------------------------------------------\n"
                 f"✅ *Por favor, confirme se os dados estão corretos.*\n"
                 f"🔄 Responda com '✅ Sim' ou '❌ Não'."
@@ -66,35 +66,34 @@ def schedule_appointment(request):
 
         case 5:
             data_cons = request.session["dados_consulta"]
-            nome_paciente = data_cons.get('nome')
-            idade = data_cons.get('idade')
-            data_consulta = data_cons.get('data')
+            nome_paciente = data_cons.get("nome")
+            idade = data_cons.get("idade")
+            data_consulta = data_cons.get("data")
             data_formatada = datetime.strptime(data_consulta, "%d/%m/%Y %H:%M")
-            id_type = data_cons.get('id_tipo')
+            id_type = data_cons.get("id_tipo")
             phone = request.session["user_phone"]
-            type_consulta = tipos_consulta.get(
-                id=int(id_type)
-            )
+            type_consulta = tipos_consulta.get(id=int(id_type))
             if user_message.lower().strip() == "sim":
-                register_consultas(nome_paciente, idade, data_formatada, phone, type_consulta)
+                register_consultas(
+                    nome_paciente, idade, data_formatada, phone, type_consulta
+                )
                 resp.message(
-                    f"✅ *Consulta Agendada com Sucesso!*\n"
+                    f"✅ *Consulta Agendada com Sucesso!*\n\n"
                     f"🧑‍⚕️ *Nome do Paciente:* {data_cons.get('nome')}\n"
                     f"🎂 *Idade do Paciente:* {data_cons.get('idade')} anos\n"
                     f"🗓️ *Data da Consulta:* {data_cons.get('data')}\n"
-                    f"📋 *Tipo da Consulta:* {data_cons.get('tipo')}\n"
+                    f"📋 *Tipo da Consulta:* {type_consulta.nome}\n"
                     f"--------------------------------------------\n"
                     f"👍 Agradecemos a sua preferência! Se precisar de mais informações, entre em contato."
                 )
             if user_message.lower().strip() == "não":
-                resp.message(        
+                resp.message(
                     f"⚠️ *Erro nos Dados*\n"
                     f"Parece que houve um erro com os seus dados. \n"
                     f"Por favor, clique em qualquer tecla para reiniciar a agenda e corrigir as informações.\n"
                     f"📅 Agradecemos a sua compreensão!"
                 )
                 request.session["consulta_i"] = 0
-            
 
     return HttpResponse(str(resp))
 
