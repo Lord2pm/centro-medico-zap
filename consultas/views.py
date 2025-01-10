@@ -24,6 +24,7 @@ def get_consultas_by_user_phone(phone: str):
 
     return string
 
+
 def register_consultas(nome_paciente, idade, data_consulta, phone, tipo) -> bool:
     user = get_user_by_phone(phone)
     nova_consulta = Consulta(
@@ -32,7 +33,7 @@ def register_consultas(nome_paciente, idade, data_consulta, phone, tipo) -> bool
         data_consulta=data_consulta,
         usuario=user,
         tipo=tipo,
-        status=False  # Ou True, dependendo da lógica do seu aplicativo
+        status=False,  # Ou True, dependendo da lógica do seu aplicativo
     )
     try:
         nova_consulta.save()

@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from difflib import SequenceMatcher
 
-
 load_dotenv()
 
 
@@ -44,10 +43,11 @@ def create_prompt(context: str):
     # Adiciona a nova pergunta ao histórico
     historico.append(f"Pergunta: {context}")
 
-    response = model.generate_content(f"""Você é um especialista em medicina ocular. Quando receber uma pergunta, verifique se ela está relacionada a condições oculares, tratamentos ou cuidados. 
+    response = model.generate_content(
+        f"""Você é um especialista em medicina ocular. Quando receber uma pergunta, verifique se ela está relacionada a condições oculares, tratamentos ou cuidados. 
 
 - Se a pergunta não for sobre medicina ocular, responda que não está capacitado para ajudar.
-- Se a pergunta for pertinente, forneça uma resposta clara e objetiva de forma amigável. 
+- Se a pergunta for pertinente, forneça uma resposta clara, curta e objetiva de forma amigável e num padrão que ser enviada no WhatsApp sem dificultar a leitura. 
 
 Caso o usuário pergunte sobre o Centro Óptico Visão Futurista, forneça as seguintes informações:
 
@@ -69,6 +69,9 @@ Inclua na sua resposta icones bem descritivos.
 No final da resposta sobre condições oculares, incentive o usuário a entrar em contato com o Centro Óptico Visão Futurista se tiver alguma dúvida ou condição ocular.
     Histórico de Perguntas:
     {', '.join(historico)}\n
-    Pergunta: {context}""")
+    Pergunta: {context}"""
+    )
+
+    print(response.text)
 
     return response.text
