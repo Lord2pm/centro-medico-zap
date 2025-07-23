@@ -29,4 +29,4 @@ A solução integra:
 - [Django 4.x](https://www.djangoproject.com/)
 - [Twilio API](https://www.twilio.com/)
 - [Google Generative AI (Gemini)](https://ai.google.dev/)
-- [SQLite / PostgreSQL](https://www.postgresql.org/) (pode ajustar conforme DB utilizado)
+- [SQLite](https://www.sqlite.org/)
